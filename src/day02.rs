@@ -115,6 +115,22 @@ fn part1(games: &[Game]) -> u32 {
 }
 
 #[aoc(day2, part2)]
-fn part2(_lines: &[Game]) -> u32 {
-    0
+fn part2(games: &[Game]) -> u32 {
+    let mut sum = 0;
+
+    for game in games {
+        let mut red_min = 0;
+        let mut green_min = 0;
+        let mut blue_min = 0;
+
+        for pull in &game.pulls {
+            red_min = std::cmp::max(red_min, pull.red);
+            green_min = std::cmp::max(green_min, pull.green);
+            blue_min = std::cmp::max(blue_min, pull.blue);
+        }
+
+        sum += red_min * green_min * blue_min;
+    }
+
+    sum
 }
