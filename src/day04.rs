@@ -8,7 +8,6 @@ use std::collections::HashSet;
 
 #[derive(Debug)]
 struct Card {
-    index: u32,
     winning_numbers: HashSet<u32>,
     selected_numbers: HashSet<u32>,
 }
@@ -28,7 +27,7 @@ fn whitespace_preceded_u32(input: &str) -> IResult<&str, u32> {
 
 fn parse_line(input: &str) -> IResult<&str, Card> {
     let (input, _) = tag("Card")(input)?;
-    let (input, index) = whitespace_preceded_u32(input)?;
+    let (input, _) = whitespace_preceded_u32(input)?;
     let (input, _) = tag(":")(input)?;
 
     let (input, (winning_numbers, _)) = many_till(whitespace_preceded_u32, tag(" |"))(input)?;
@@ -40,7 +39,6 @@ fn parse_line(input: &str) -> IResult<&str, Card> {
     Ok((
         input,
         Card {
-            index,
             winning_numbers,
             selected_numbers,
         },
