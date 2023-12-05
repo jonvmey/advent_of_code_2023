@@ -63,6 +63,20 @@ fn part1(cards: &[Card]) -> u32 {
 }
 
 #[aoc(day4, part2)]
-fn part2(_cards: &[Card]) -> u32 {
-    0
+fn part2(cards: &[Card]) -> usize {
+    let match_counts: Vec<usize> = cards
+        .iter()
+        .map(|card| card.matched_numbers().len())
+        .collect();
+    let mut card_counts = vec![1; match_counts.len()];
+
+    for index in 0..match_counts.len() {
+        let count = match_counts[index];
+
+        for i in 0..count {
+            card_counts[index + i + 1] += card_counts[index];
+        }
+    }
+
+    card_counts.iter().sum()
 }
