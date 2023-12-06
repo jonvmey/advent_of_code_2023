@@ -209,7 +209,7 @@ fn parse_input1(input: &str) -> Almanac {
     let (input, water_to_light) = parse_water_to_light_map(input).unwrap();
     let (input, light_to_temperature) = parse_light_to_temperature_map(input).unwrap();
     let (input, temperature_to_humidity) = parse_temperature_to_humidity_map(input).unwrap();
-    let (input, humidity_to_location) = parse_humidity_to_location_map(input).unwrap();
+    let (_, humidity_to_location) = parse_humidity_to_location_map(input).unwrap();
 
     Almanac {
         seeds,
