@@ -56,6 +56,21 @@ fn part1(races: &[Race]) -> u32 {
 }
 
 #[aoc(day6, part2)]
-fn part2(_input: &[Race]) -> u32 {
-    0
+fn part2(_races: &[Race]) -> u64 {
+    const TIME : u64 = 35937366;
+    const DISTANCE : u64 = 212206012011044;
+
+    let mut win_count = 0;
+
+    for push_time in 1..TIME {
+        let speed = push_time;
+        let move_time = TIME - push_time;
+        let distance = speed * move_time;
+
+        if distance > DISTANCE {
+            win_count += 1;
+        }
+    }
+
+    win_count
 }
