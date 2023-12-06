@@ -2,19 +2,20 @@ use aoc_runner_derive::{aoc, aoc_generator};
 use nom::bytes::complete::tag;
 use nom::character::complete::newline;
 use nom::multi::{many1, separated_list1};
-use nom::sequence::{preceded, tuple};
+use nom::sequence::{preceded, separated_pair, tuple};
 use nom::IResult;
+use range_ext::intersect::{Intersect, IntersectionExt};
+use std::ops::Range;
 
 #[derive(Debug)]
 struct Mapping {
     destination: u64,
-    source: u64,
-    length: u64,
+    source: Range<u64>,
 }
 
 #[derive(Debug)]
 struct Almanac {
-    seeds: Vec<u64>,
+    seeds: Vec<Range<u64>>,
     seed_to_soil: Vec<Mapping>,
     soil_to_fertilizer: Vec<Mapping>,
     fertilizer_to_water: Vec<Mapping>,
@@ -24,35 +25,114 @@ struct Almanac {
     humidity_to_location: Vec<Mapping>,
 }
 
-impl Almanac {
-    fn seed_to_location(&self, seed: u64) -> u64 {
-        let soil = perform_mapping(&self.seed_to_soil, seed);
-        let fertilizer = perform_mapping(&self.soil_to_fertilizer, soil);
-        let water = perform_mapping(&self.fertilizer_to_water, fertilizer);
-        let light = perform_mapping(&self.water_to_light, water);
-        let temperature = perform_mapping(&self.light_to_temperature, light);
-        let humidity = perform_mapping(&self.temperature_to_humidity, temperature);
-        let location = perform_mapping(&self.humidity_to_location, humidity);
+fn perform_mapping(inputs: &[Range<u64>], mappings: &[Mapping]) -> Vec<Range<u64>> {
+    let mut outputs: Vec<Range<u64>> = vec![];
 
-        location
-    }
-}
+    for input in inputs {
+        let mut remaining_input = input.start..input.end;
+        let mut intersecting_mappings: Vec<Mapping> = mappings
+            .iter()
+            .filter(|mapping| input.does_intersect(&mapping.source))
+            .map(|m| Mapping {
+                destination: m.destination,
+                source: m.source.start..m.source.end,
+            })
+            .collect();
+        intersecting_mappings.sort_by(|a, b| a.source.start.cmp(&b.source.start));
 
-fn perform_mapping(mappings: &[Mapping], input: u64) -> u64 {
-    for mapping in mappings {
-        if input >= mapping.source && input < mapping.source + mapping.length {
-            let offset = input - mapping.source;
-            return mapping.destination + offset;
+        for mapping in intersecting_mappings {
+            let source = mapping.source;
+            let destination = mapping.destination;
+
+            match remaining_input.intersect_ext(&source) {
+                IntersectionExt::Empty | IntersectionExt::Less | IntersectionExt::Greater => {
+                    panic!()
+                }
+                IntersectionExt::Same => {
+                    let mapped_length = remaining_input.end - remaining_input.start;
+                    outputs.push(destination..destination + mapped_length);
+                    remaining_input = 0..0;
+                }
+                IntersectionExt::LessOverlap => {
+                    let mapped_length = remaining_input.end - source.start;
+                    outputs.push(remaining_input.start..source.start);
+                    outputs.push(destination..destination + mapped_length);
+                    remaining_input = 0..0;
+                }
+                IntersectionExt::Within => {
+                    let offset = remaining_input.start - source.start;
+                    let mapped_length = remaining_input.end - remaining_input.start;
+                    outputs.push(destination + offset..destination + offset + mapped_length);
+                    remaining_input = 0..0;
+                }
+                IntersectionExt::Over => {
+                    let mapped_length = source.end - source.start;
+                    outputs.push(remaining_input.start..source.start);
+                    outputs.push(destination..destination + mapped_length);
+                    remaining_input = source.end..remaining_input.end;
+                }
+                IntersectionExt::GreaterOverlap => {
+                    let offset = remaining_input.start - source.start;
+                    let mapped_length = source.end - remaining_input.start;
+                    outputs.push(destination + offset..destination + offset + mapped_length);
+                    remaining_input = source.end..remaining_input.end;
+                }
+            }
+        }
+
+        if !remaining_input.is_empty() {
+            outputs.push(remaining_input.start..remaining_input.end);
         }
     }
 
-    input
+    outputs
 }
 
-fn parse_seeds(input: &str) -> IResult<&str, Vec<u64>> {
-    preceded(
+fn seeds_to_locations(almanac: &Almanac) -> Vec<Range<u64>> {
+    perform_mapping(
+        &perform_mapping(
+            &perform_mapping(
+                &perform_mapping(
+                    &perform_mapping(
+                        &perform_mapping(
+                            &perform_mapping(&almanac.seeds, &almanac.seed_to_soil),
+                            &almanac.soil_to_fertilizer,
+                        ),
+                        &almanac.fertilizer_to_water,
+                    ),
+                    &almanac.water_to_light,
+                ),
+                &almanac.light_to_temperature,
+            ),
+            &almanac.temperature_to_humidity,
+        ),
+        &almanac.humidity_to_location,
+    )
+}
+
+fn parse_seeds1(input: &str) -> IResult<&str, Vec<Range<u64>>> {
+    let (input, seeds) = preceded(
         tag("seeds: "),
         separated_list1(tag(" "), nom::character::complete::u64),
+    )(input)?;
+
+    Ok((
+        input,
+        seeds.into_iter().map(|seed| seed..seed + 1).collect(),
+    ))
+}
+
+fn parse_seeds2(input: &str) -> IResult<&str, Vec<(u64, u64)>> {
+    preceded(
+        tag("seeds: "),
+        separated_list1(
+            tag(" "),
+            separated_pair(
+                nom::character::complete::u64,
+                tag(" "),
+                nom::character::complete::u64,
+            ),
+        ),
     )(input)
 }
 
@@ -67,8 +147,7 @@ fn parse_map_line(input: &str) -> IResult<&str, Mapping> {
         input,
         Mapping {
             destination,
-            source,
-            length,
+            source: source..source + length,
         },
     ))
 }
@@ -122,9 +201,8 @@ fn parse_humidity_to_location_map(input: &str) -> IResult<&str, Vec<Mapping>> {
     Ok((input, mapping))
 }
 
-#[aoc_generator(day5)]
-fn parse_input(input: &str) -> Almanac {
-    let (input, seeds) = parse_seeds(input).unwrap();
+fn parse_input1(input: &str) -> Almanac {
+    let (input, seeds) = parse_seeds1(input).unwrap();
     let (input, seed_to_soil) = parse_seed_to_soil_map(input).unwrap();
     let (input, soil_to_fertilizer) = parse_soil_to_fertilizer_map(input).unwrap();
     let (input, fertilizer_to_water) = parse_fertilizer_to_water_map(input).unwrap();
@@ -145,17 +223,52 @@ fn parse_input(input: &str) -> Almanac {
     }
 }
 
+fn parse_input2(input: &str) -> Almanac {
+    let (input, seeds_ranges) = parse_seeds2(input).unwrap();
+    let (input, seed_to_soil) = parse_seed_to_soil_map(input).unwrap();
+    let (input, soil_to_fertilizer) = parse_soil_to_fertilizer_map(input).unwrap();
+    let (input, fertilizer_to_water) = parse_fertilizer_to_water_map(input).unwrap();
+    let (input, water_to_light) = parse_water_to_light_map(input).unwrap();
+    let (input, light_to_temperature) = parse_light_to_temperature_map(input).unwrap();
+    let (input, temperature_to_humidity) = parse_temperature_to_humidity_map(input).unwrap();
+    let (_, humidity_to_location) = parse_humidity_to_location_map(input).unwrap();
+
+    let seeds = seeds_ranges
+        .into_iter()
+        .map(|(start, length)| start..start + length)
+        .collect();
+
+    Almanac {
+        seeds,
+        seed_to_soil,
+        soil_to_fertilizer,
+        fertilizer_to_water,
+        water_to_light,
+        light_to_temperature,
+        temperature_to_humidity,
+        humidity_to_location,
+    }
+}
+
+#[aoc_generator(day5)]
+fn parse_input(input: &str) -> String {
+    input.to_string()
+}
+
 #[aoc(day5, part1)]
-fn part1(almanac: &Almanac) -> u64 {
-    almanac
-        .seeds
+fn part1(input: &str) -> u64 {
+    seeds_to_locations(&parse_input1(input))
         .iter()
-        .map(|seed| almanac.seed_to_location(*seed))
+        .map(|range| range.start)
         .min()
         .unwrap()
 }
 
 #[aoc(day5, part2)]
-fn part2(_input: &Almanac) -> u64 {
-    0
+fn part2(input: &str) -> u64 {
+    seeds_to_locations(&parse_input2(input))
+        .iter()
+        .map(|range| range.start)
+        .min()
+        .unwrap()
 }
