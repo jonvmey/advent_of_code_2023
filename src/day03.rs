@@ -1,5 +1,6 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use grid_2d::{Coord, Grid, Size};
+use std::collections::HashMap;
 
 fn is_symbol(c: char) -> bool {
     match c {
@@ -8,30 +9,48 @@ fn is_symbol(c: char) -> bool {
     }
 }
 
-fn adjacent_symbol(grid: &Grid<char>, coord: &Coord) -> bool {
-    is_symbol(
-        *grid
-            .get(Coord::new(coord.x - 1, coord.y - 1))
-            .unwrap_or(&'.'),
-    ) || is_symbol(*grid.get(Coord::new(coord.x, coord.y - 1)).unwrap_or(&'.'))
-        || is_symbol(
-            *grid
-                .get(Coord::new(coord.x + 1, coord.y - 1))
-                .unwrap_or(&'.'),
-        )
-        || is_symbol(*grid.get(Coord::new(coord.x - 1, coord.y)).unwrap_or(&'.'))
-        || is_symbol(*grid.get(Coord::new(coord.x + 1, coord.y)).unwrap_or(&'.'))
-        || is_symbol(
-            *grid
-                .get(Coord::new(coord.x - 1, coord.y + 1))
-                .unwrap_or(&'.'),
-        )
-        || is_symbol(*grid.get(Coord::new(coord.x, coord.y + 1)).unwrap_or(&'.'))
-        || is_symbol(
-            *grid
-                .get(Coord::new(coord.x + 1, coord.y + 1))
-                .unwrap_or(&'.'),
-        )
+fn adjacent_symbol(grid: &Grid<char>, coord: &Coord) -> Option<Coord> {
+    let test = Coord::new(coord.x - 1, coord.y - 1);
+    if is_symbol(*grid.get(test).unwrap_or(&'.')) {
+        return Some(test);
+    }
+
+    let test = Coord::new(coord.x, coord.y - 1);
+    if is_symbol(*grid.get(test).unwrap_or(&'.')) {
+        return Some(test);
+    }
+
+    let test = Coord::new(coord.x + 1, coord.y - 1);
+    if is_symbol(*grid.get(test).unwrap_or(&'.')) {
+        return Some(test);
+    }
+
+    let test = Coord::new(coord.x - 1, coord.y);
+    if is_symbol(*grid.get(test).unwrap_or(&'.')) {
+        return Some(test);
+    }
+
+    let test = Coord::new(coord.x + 1, coord.y);
+    if is_symbol(*grid.get(test).unwrap_or(&'.')) {
+        return Some(test);
+    }
+
+    let test = Coord::new(coord.x - 1, coord.y + 1);
+    if is_symbol(*grid.get(test).unwrap_or(&'.')) {
+        return Some(test);
+    }
+
+    let test = Coord::new(coord.x, coord.y + 1);
+    if is_symbol(*grid.get(test).unwrap_or(&'.')) {
+        return Some(test);
+    }
+
+    let test = Coord::new(coord.x + 1, coord.y + 1);
+    if is_symbol(*grid.get(test).unwrap_or(&'.')) {
+        return Some(test);
+    }
+
+    None
 }
 
 #[aoc_generator(day3)]
@@ -55,7 +74,7 @@ fn part1(grid: &Grid<char>) -> u32 {
         if cell.is_digit(10) {
             number.push(*cell);
 
-            if adjacent_symbol(&grid, &coord) {
+            if let Some(_) = adjacent_symbol(&grid, &coord) {
                 seen_symbol = true;
             }
         } else {
@@ -72,6 +91,42 @@ fn part1(grid: &Grid<char>) -> u32 {
 }
 
 #[aoc(day3, part2)]
-fn part2(_grid: &Grid<char>) -> u32 {
-    0
+fn part2(grid: &Grid<char>) -> u32 {
+    let mut seen_symbol = false;
+    let mut symbol_coord = Coord::new(0, 0);
+    let mut number = String::new();
+    let mut numbers_seen_with_symbols: Vec<(u32, Coord)> = vec![];
+
+    for (coord, cell) in grid.enumerate() {
+        if cell.is_digit(10) {
+            number.push(*cell);
+
+            if let Some(coord) = adjacent_symbol(&grid, &coord) {
+                seen_symbol = true;
+                symbol_coord = coord;
+            }
+        } else {
+            if seen_symbol && *grid.get(symbol_coord).unwrap() == '*' {
+                numbers_seen_with_symbols.push((number.parse::<u32>().unwrap(), symbol_coord));
+                seen_symbol = false;
+            }
+
+            number.clear();
+        }
+    }
+
+    let mut numbers_around_coord_counts: HashMap<Coord, Vec<u32>> = HashMap::new();
+
+    for (number, coord) in numbers_seen_with_symbols {
+        numbers_around_coord_counts
+            .entry(coord)
+            .or_default()
+            .push(number);
+    }
+
+    numbers_around_coord_counts
+        .iter()
+        .filter(|(_, numbers)| numbers.len() == 2)
+        .map(|(_, numbers)| numbers[0] * numbers[1])
+        .sum()
 }
