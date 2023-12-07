@@ -29,7 +29,11 @@ fn parse_input(input: &str) -> Vec<Race> {
     let (input, times) = parse_times(input).unwrap();
     let (_, distances) = parse_distances(input).unwrap();
 
-    times.into_iter().zip(distances.into_iter()).map(|(time, distance)| Race{time, distance}).collect()
+    times
+        .into_iter()
+        .zip(distances.into_iter())
+        .map(|(time, distance)| Race { time, distance })
+        .collect()
 }
 
 #[aoc(day6, part1)]
@@ -57,8 +61,8 @@ fn part1(races: &[Race]) -> u32 {
 
 #[aoc(day6, part2)]
 fn part2(_races: &[Race]) -> u64 {
-    const TIME : u64 = 35937366;
-    const DISTANCE : u64 = 212206012011044;
+    const TIME: u64 = 35937366;
+    const DISTANCE: u64 = 212206012011044;
 
     let mut win_count = 0;
 
