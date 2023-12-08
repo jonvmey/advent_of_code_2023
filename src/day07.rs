@@ -30,6 +30,15 @@ impl Hand {
             *counts.entry(card).or_insert(0) += 1;
         }
 
+        // Move joker count to highest non-joker card count
+        if let Some(joker_count) = counts.remove(&1) {
+            let (dest_key, _) = counts
+                .iter()
+                .max_by_key(|entry| entry.1)
+                .unwrap_or((&14, &0));
+            *counts.entry(*dest_key).or_insert(0) += joker_count;
+        }
+
         let mut counts: Vec<u32> = counts.values().cloned().collect();
         counts.sort();
 
@@ -141,6 +150,22 @@ fn part1(games: &[Game]) -> u32 {
 }
 
 #[aoc(day7, part2)]
-fn part2(_input: &[Game]) -> u32 {
-    0
+fn part2(games: &[Game]) -> u32 {
+    let mut games: Vec<Game> = games.iter().copied().collect();
+
+    for game in &mut games {
+        for card in &mut game.hand.cards {
+            if *card == 11 {
+                *card = 1;
+            }
+        }
+    }
+
+    games.sort_by(|a, b| a.hand.partial_cmp(&b.hand).unwrap());
+
+    games
+        .iter()
+        .rev()
+        .enumerate()
+        .fold(0, |acc, (index, game)| acc + (index as u32 + 1) * game.bid)
 }
