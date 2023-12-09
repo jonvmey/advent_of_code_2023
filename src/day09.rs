@@ -4,13 +4,29 @@ use nom::multi::separated_list1;
 use nom::IResult;
 
 fn calculate_next(samples: &[i32]) -> i32 {
-    let differences : Vec<i32> = samples.windows(2).map(|elements| elements[1] - elements[0]).collect();
+    let differences: Vec<i32> = samples
+        .windows(2)
+        .map(|elements| elements[1] - elements[0])
+        .collect();
 
     if differences.iter().all(|element| *element == 0) {
         return *samples.last().unwrap();
     }
 
     samples.last().unwrap() + calculate_next(&differences)
+}
+
+fn calculate_previous(samples: &[i32]) -> i32 {
+    let differences: Vec<i32> = samples
+        .windows(2)
+        .map(|elements| elements[1] - elements[0])
+        .collect();
+
+    if differences.iter().all(|element| *element == 0) {
+        return *samples.first().unwrap();
+    }
+
+    samples.first().unwrap() - calculate_previous(&differences)
 }
 
 fn parse_line(input: &str) -> IResult<&str, Vec<i32>> {
@@ -26,10 +42,16 @@ fn parse_input(input: &str) -> Vec<Vec<i32>> {
 
 #[aoc(day9, part1)]
 fn part1(sample_histories: &[Vec<i32>]) -> i32 {
-    sample_histories.iter().map(|samples| calculate_next(samples)).sum()
+    sample_histories
+        .iter()
+        .map(|samples| calculate_next(samples))
+        .sum()
 }
 
 #[aoc(day9, part2)]
-fn part2(_input: &[Vec<i32>]) -> i32 {
-    0
+fn part2(sample_histories: &[Vec<i32>]) -> i32 {
+    sample_histories
+        .iter()
+        .map(|samples| calculate_previous(samples))
+        .sum()
 }
