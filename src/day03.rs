@@ -3,10 +3,7 @@ use grid_2d::{Coord, Grid, Size};
 use std::collections::HashMap;
 
 fn is_symbol(c: char) -> bool {
-    match c {
-        '@' | '#' | '$' | '%' | '&' | '*' | '-' | '+' | '=' | '/' => true,
-        _ => false,
-    }
+    matches!(c, '@' | '#' | '$' | '%' | '&' | '*' | '-' | '+' | '=' | '/')
 }
 
 fn adjacent_symbol(grid: &Grid<char>, coord: &Coord) -> Option<Coord> {
@@ -71,10 +68,10 @@ fn part1(grid: &Grid<char>) -> u32 {
     let mut sum = 0;
 
     for (coord, cell) in grid.enumerate() {
-        if cell.is_digit(10) {
+        if cell.is_ascii_digit() {
             number.push(*cell);
 
-            if let Some(_) = adjacent_symbol(&grid, &coord) {
+            if adjacent_symbol(grid, &coord).is_some() {
                 seen_symbol = true;
             }
         } else {
@@ -98,10 +95,10 @@ fn part2(grid: &Grid<char>) -> u32 {
     let mut numbers_seen_with_symbols: Vec<(u32, Coord)> = vec![];
 
     for (coord, cell) in grid.enumerate() {
-        if cell.is_digit(10) {
+        if cell.is_ascii_digit() {
             number.push(*cell);
 
-            if let Some(coord) = adjacent_symbol(&grid, &coord) {
+            if let Some(coord) = adjacent_symbol(grid, &coord) {
                 seen_symbol = true;
                 symbol_coord = coord;
             }

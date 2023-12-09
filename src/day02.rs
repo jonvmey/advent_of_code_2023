@@ -52,7 +52,7 @@ fn parse_red_count(input: &str) -> IResult<&str, (Colour, u32)> {
         return Ok((input, (Colour::Red, count)));
     }
     Err(nom::Err::Failure(nom::error::Error {
-        input: input,
+        input,
         code: nom::error::ErrorKind::Fail,
     }))
 }
@@ -67,7 +67,7 @@ fn parse_green_count(input: &str) -> IResult<&str, (Colour, u32)> {
         return Ok((input, (Colour::Green, count)));
     }
     Err(nom::Err::Failure(nom::error::Error {
-        input: input,
+        input,
         code: nom::error::ErrorKind::Fail,
     }))
 }
@@ -82,7 +82,7 @@ fn parse_blue_count(input: &str) -> IResult<&str, (Colour, u32)> {
         return Ok((input, (Colour::Blue, count)));
     }
     Err(nom::Err::Failure(nom::error::Error {
-        input: input,
+        input,
         code: nom::error::ErrorKind::Fail,
     }))
 }

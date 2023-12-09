@@ -139,7 +139,7 @@ fn parse_input(input: &str) -> Vec<Game> {
 
 #[aoc(day7, part1)]
 fn part1(games: &[Game]) -> u32 {
-    let mut games: Vec<Game> = games.iter().copied().collect();
+    let mut games = games.to_vec();
     games.sort_by(|a, b| a.hand.partial_cmp(&b.hand).unwrap());
 
     games
@@ -151,7 +151,7 @@ fn part1(games: &[Game]) -> u32 {
 
 #[aoc(day7, part2)]
 fn part2(games: &[Game]) -> u32 {
-    let mut games: Vec<Game> = games.iter().copied().collect();
+    let mut games = games.to_vec();
 
     for game in &mut games {
         for card in &mut game.hand.cards {

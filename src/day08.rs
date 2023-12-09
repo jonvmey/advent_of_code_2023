@@ -86,5 +86,5 @@ fn part2(input: &(String, Maps)) -> u64 {
         }
     }
 
-    cycle_steps.into_iter().fold(1, |a, b| lcm(a, b))
+    cycle_steps.into_iter().fold(1, lcm)
 }

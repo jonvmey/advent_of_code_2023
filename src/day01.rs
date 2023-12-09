@@ -1,11 +1,11 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 
 fn process_line_part_1(line: &str) -> i32 {
-    let first_digit = line.chars().find(|&c| c.is_digit(10)).unwrap().to_string();
+    let first_digit = line.chars().find(|&c| c.is_ascii_digit()).unwrap().to_string();
     let last_digit = line
         .chars()
         .rev()
-        .find(|&c| c.is_digit(10))
+        .find(|&c| c.is_ascii_digit())
         .unwrap()
         .to_string();
 

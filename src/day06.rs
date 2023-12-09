@@ -31,7 +31,7 @@ fn parse_input(input: &str) -> Vec<Race> {
 
     times
         .into_iter()
-        .zip(distances.into_iter())
+        .zip(distances)
         .map(|(time, distance)| Race { time, distance })
         .collect()
 }
