@@ -16,19 +16,6 @@ fn calculate_next(samples: &[i32]) -> i32 {
     samples.last().unwrap() + calculate_next(&differences)
 }
 
-fn calculate_previous(samples: &[i32]) -> i32 {
-    let differences: Vec<i32> = samples
-        .windows(2)
-        .map(|elements| elements[1] - elements[0])
-        .collect();
-
-    if differences.iter().all(|element| *element == 0) {
-        return *samples.first().unwrap();
-    }
-
-    samples.first().unwrap() - calculate_previous(&differences)
-}
-
 fn parse_line(input: &str) -> IResult<&str, Vec<i32>> {
     separated_list1(space1, nom::character::complete::i32)(input)
 }
@@ -52,6 +39,6 @@ fn part1(sample_histories: &[Vec<i32>]) -> i32 {
 fn part2(sample_histories: &[Vec<i32>]) -> i32 {
     sample_histories
         .iter()
-        .map(|samples| calculate_previous(samples))
+        .map(|samples| calculate_next(&samples.iter().rev().copied().collect::<Vec<i32>>()))
         .sum()
 }
