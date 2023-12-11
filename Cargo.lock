@@ -9,6 +9,7 @@ dependencies = [
  "aoc-runner",
  "aoc-runner-derive",
  "grid_2d",
+ "itertools",
  "nom",
  "num",
  "range-ext",
@@ -56,12 +57,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1020a2ed8bf43fc850b01db7570c0e4194d3e3d8d806a5f1857d2ab15feec57"
 
 [[package]]
+name = "either"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
+
+[[package]]
 name = "grid_2d"
 version = "0.15.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6dfb23b456edfd3f388df8047a84a367a1168f4606bc21fe1e5dc9606a23689b"
 dependencies = [
  "coord_2d",
+]
+
+[[package]]
+name = "itertools"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25db6b064527c5d482d0423354fcd07a89a2dfe07b67892e62411946db7f07b0"
+dependencies = [
+ "either",
 ]
 
 [[package]]

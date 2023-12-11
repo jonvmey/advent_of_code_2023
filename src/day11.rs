@@ -1,4 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use itertools::Itertools;
 use std::cmp::{max, min};
 use std::collections::HashSet;
 use std::ops::Range;
@@ -39,29 +40,21 @@ fn expand_universe(galaxies: &mut [Point], expansion_size: usize) {
     let columns_without_galaxies = missing_values(0..NUM_COLUMNS, columns_with_galaxies);
 
     for galaxy in galaxies {
-        galaxy.row += expansion_size * rows_without_galaxies
-            .iter()
-            .filter(|g| *g < &galaxy.row)
-            .count();
-        galaxy.column += expansion_size * columns_without_galaxies
-            .iter()
-            .filter(|g| *g < &galaxy.column)
-            .count();
+        galaxy.row += expansion_size
+            * rows_without_galaxies
+                .iter()
+                .filter(|g| *g < &galaxy.row)
+                .count();
+        galaxy.column += expansion_size
+            * columns_without_galaxies
+                .iter()
+                .filter(|g| *g < &galaxy.column)
+                .count();
     }
 }
 
-fn generate_pairs(galaxies: &[Point]) -> Vec<(Point, Point)> {
-    let mut pairs = vec![];
-
-    for (i, galaxy_i) in galaxies.iter().enumerate() {
-        for j in i + 1..galaxies.len() {
-            let galaxy_j = galaxies[j];
-
-            pairs.push((*galaxy_i, galaxy_j));
-        }
-    }
-
-    pairs
+fn generate_pairs(galaxies: Vec<Point>) -> Vec<(Point, Point)> {
+    galaxies.into_iter().tuple_combinations().collect()
 }
 
 #[aoc_generator(day11)]
@@ -87,7 +80,7 @@ fn part1(galaxies: &[Point]) -> usize {
 
     expand_universe(&mut galaxies, 1);
 
-    generate_pairs(&galaxies)
+    generate_pairs(galaxies)
         .iter()
         .map(|(a, b)| a.distance(*b))
         .sum()
@@ -99,7 +92,7 @@ fn part2(galaxies: &[Point]) -> usize {
 
     expand_universe(&mut galaxies, 1000000 - 1);
 
-    generate_pairs(&galaxies)
+    generate_pairs(galaxies)
         .iter()
         .map(|(a, b)| a.distance(*b))
         .sum()
