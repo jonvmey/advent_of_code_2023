@@ -28,7 +28,7 @@ fn missing_values(range: Range<usize>, present_values: HashSet<usize>) -> Vec<us
     missing
 }
 
-fn expand_universe(galaxies: &mut [Point]) {
+fn expand_universe(galaxies: &mut [Point], expansion_size: usize) {
     const NUM_ROWS: usize = 140;
     const NUM_COLUMNS: usize = 140;
 
@@ -39,11 +39,11 @@ fn expand_universe(galaxies: &mut [Point]) {
     let columns_without_galaxies = missing_values(0..NUM_COLUMNS, columns_with_galaxies);
 
     for galaxy in galaxies {
-        galaxy.row += rows_without_galaxies
+        galaxy.row += expansion_size * rows_without_galaxies
             .iter()
             .filter(|g| *g < &galaxy.row)
             .count();
-        galaxy.column += columns_without_galaxies
+        galaxy.column += expansion_size * columns_without_galaxies
             .iter()
             .filter(|g| *g < &galaxy.column)
             .count();
@@ -85,7 +85,7 @@ fn parse_input(input: &str) -> Vec<Point> {
 fn part1(galaxies: &[Point]) -> usize {
     let mut galaxies = galaxies.to_vec();
 
-    expand_universe(&mut galaxies);
+    expand_universe(&mut galaxies, 1);
 
     generate_pairs(&galaxies)
         .iter()
@@ -94,6 +94,13 @@ fn part1(galaxies: &[Point]) -> usize {
 }
 
 #[aoc(day11, part2)]
-fn part2(_input: &[Point]) -> usize {
-    0
+fn part2(galaxies: &[Point]) -> usize {
+    let mut galaxies = galaxies.to_vec();
+
+    expand_universe(&mut galaxies, 1000000 - 1);
+
+    generate_pairs(&galaxies)
+        .iter()
+        .map(|(a, b)| a.distance(*b))
+        .sum()
 }
