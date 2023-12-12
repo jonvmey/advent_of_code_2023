@@ -68,11 +68,7 @@ fn count_possible_condition_records(
             broken_conditions.replace_range(0..1, "#");
 
             count_possible_condition_records(good_conditions, broken_counts.clone(), broken_seen)
-                + count_possible_condition_records(
-                    broken_conditions,
-                    broken_counts,
-                    broken_seen,
-                )
+                + count_possible_condition_records(broken_conditions, broken_counts, broken_seen)
         }
         _ => panic!(),
     }
@@ -109,37 +105,33 @@ fn part1(records: &[ConditionRecord]) -> u64 {
 }
 
 #[aoc(day12, part2)]
-fn part2(_records: &[ConditionRecord]) -> u64 {
-    // const REPETITIONS: usize = 5;
+fn part2(records: &[ConditionRecord]) -> u64 {
+    const REPETITIONS: usize = 5;
 
-    // let records: Vec<ConditionRecord> = records
-    //     .iter()
-    //     .map(|(conditions, broken_counts)| {
-    //         (
-    //             conditions
-    //                 .chars()
-    //                 .chain("?".chars())
-    //                 .cycle()
-    //                 .take((conditions.len() + 1) * REPETITIONS - 1)
-    //                 .collect(),
-    //             broken_counts
-    //                 .iter()
-    //                 .cycle()
-    //                 .take(broken_counts.len() * REPETITIONS)
-    //                 .cloned()
-    //                 .collect(),
-    //         )
-    //     })
-    //     .collect();
+    let records: Vec<ConditionRecord> = records
+        .iter()
+        .map(|(conditions, broken_counts)| {
+            (
+                conditions
+                    .chars()
+                    .chain("?".chars())
+                    .cycle()
+                    .take((conditions.len() + 1) * REPETITIONS - 1)
+                    .collect(),
+                broken_counts
+                    .iter()
+                    .cycle()
+                    .take(broken_counts.len() * REPETITIONS)
+                    .cloned()
+                    .collect(),
+            )
+        })
+        .collect();
 
-    // // dbg!(records);
-
-    // records
-    //     .iter()
-    //     .map(|(conditions, broken_counts)| {
-    //         count_possible_condition_records(conditions.clone(), broken_counts.clone(), 0)
-    //     })
-    //     .sum()
-
-    0
+    records
+        .iter()
+        .map(|(conditions, broken_counts)| {
+            count_possible_condition_records(conditions.clone(), broken_counts.clone(), 0)
+        })
+        .sum()
 }
