@@ -1,4 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use cached::proc_macro::cached;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::newline;
@@ -8,6 +9,7 @@ use nom::IResult;
 
 type ConditionRecord = (String, Vec<u64>);
 
+#[cached]
 fn count_possible_condition_records(
     conditions: String,
     mut broken_counts: Vec<u64>,
