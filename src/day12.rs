@@ -1,6 +1,4 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use integer_partitions::Partitions;
-use itertools::Itertools;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::newline;
@@ -8,61 +6,74 @@ use nom::multi::{many1, separated_list1};
 use nom::sequence::separated_pair;
 use nom::IResult;
 
-type ConditionRecord = (String, Vec<u32>);
+type ConditionRecord = (String, Vec<u64>);
 
-fn is_possible(test: &str, pattern: &str) -> bool {
-    test.chars()
-        .zip(pattern.chars())
-        .all(|(test, pattern)| pattern == '?' || test == pattern)
-}
-
-fn generate_test_string(good_counts: &[&usize], broken_counts: &[u32], len: usize) -> String {
-    let mut test = String::with_capacity(len);
-
-    for (index, good_count) in good_counts.iter().enumerate() {
-        test.push_str(&".".repeat(**good_count));
-
-        if index != 0 && index != good_counts.len() - 1 {
-            test.push('.');
-        }
-
-        if let Some(bad_count) = broken_counts.get(index) {
-            test.push_str(&"#".repeat(*bad_count as usize));
+fn count_possible_condition_records(
+    conditions: String,
+    mut broken_counts: Vec<u64>,
+    mut broken_seen: u64,
+) -> u64 {
+    if conditions.is_empty() {
+        if broken_counts.is_empty() || broken_counts == [broken_seen] {
+            return 1;
+        } else {
+            return 0;
         }
     }
 
-    test
-}
-
-fn count_possible_condition_records((conditions, broken_counts): &ConditionRecord) -> u32 {
-    let num_gears = conditions.len() as u32;
-    let num_broken_gears: u32 = broken_counts.iter().sum();
-    let num_good_gears = num_gears - num_broken_gears;
-
-    let num_moveable_gears = num_good_gears - (broken_counts.len() as u32 - 1);
-    let num_moveable_gear_locations = broken_counts.len() as u32 + 1;
-
-    let mut count: u32 = 0;
-    let mut partitions = Partitions::new(num_moveable_gears as usize);
-
-    while let Some(partition) = partitions.next() {
-        if partition.len() as u32 > num_moveable_gear_locations {
-            continue;
+    if broken_counts.is_empty() {
+        if conditions.find('#').is_some() {
+            return 0;
+        } else {
+            return 1;
         }
-
-        let mut partition = partition.to_vec();
-        partition.resize(num_moveable_gear_locations as usize, 0);
-
-        count += partition
-            .iter()
-            .permutations(partition.len())
-            .unique()
-            .map(|permutation| generate_test_string(&permutation, broken_counts, conditions.len()))
-            .filter(|test_string| is_possible(test_string, conditions))
-            .count() as u32;
     }
 
-    count
+    match conditions.chars().next().unwrap() {
+        '.' => {
+            if broken_seen > 0 {
+                if broken_seen == *broken_counts.first().expect("checked not empty above") {
+                    broken_counts.remove(0);
+                    broken_seen = 0;
+                } else {
+                    return 0;
+                }
+            }
+
+            count_possible_condition_records(
+                conditions[1..].to_string(),
+                broken_counts,
+                broken_seen,
+            )
+        }
+        '#' => {
+            broken_seen += 1;
+
+            if broken_seen > *broken_counts.first().expect("checked not empty above") {
+                return 0;
+            }
+
+            count_possible_condition_records(
+                conditions[1..].to_string(),
+                broken_counts,
+                broken_seen,
+            )
+        }
+        '?' => {
+            let mut good_conditions = conditions.clone();
+            good_conditions.replace_range(0..1, ".");
+            let mut broken_conditions = conditions;
+            broken_conditions.replace_range(0..1, "#");
+
+            count_possible_condition_records(good_conditions, broken_counts.clone(), broken_seen)
+                + count_possible_condition_records(
+                    broken_conditions,
+                    broken_counts,
+                    broken_seen,
+                )
+        }
+        _ => panic!(),
+    }
 }
 
 fn parse_conditions(input: &str) -> IResult<&str, String> {
@@ -71,8 +82,8 @@ fn parse_conditions(input: &str) -> IResult<&str, String> {
     Ok((input, conditions.into_iter().collect()))
 }
 
-fn parse_broken_counts(input: &str) -> IResult<&str, Vec<u32>> {
-    separated_list1(tag(","), nom::character::complete::u32)(input)
+fn parse_broken_counts(input: &str) -> IResult<&str, Vec<u64>> {
+    separated_list1(tag(","), nom::character::complete::u64)(input)
 }
 
 fn parse_row(input: &str) -> IResult<&str, ConditionRecord> {
@@ -81,15 +92,52 @@ fn parse_row(input: &str) -> IResult<&str, ConditionRecord> {
 
 #[aoc_generator(day12)]
 fn parse_input(input: &str) -> Vec<ConditionRecord> {
+    // let input = "???.### 1,1,3\n.??..??...?##. 1,1,3\n?#?#?#?#?#?#?#? 1,3,1,6\n????.#...#... 4,1,1\n????.######..#####. 1,6,5\n?###???????? 3,2,1";
     separated_list1(newline, parse_row)(input).unwrap().1
 }
 
 #[aoc(day12, part1)]
-fn part1(records: &[ConditionRecord]) -> u32 {
-    records.iter().map(count_possible_condition_records).sum()
+fn part1(records: &[ConditionRecord]) -> u64 {
+    records
+        .iter()
+        .map(|(conditions, broken_counts)| {
+            count_possible_condition_records(conditions.clone(), broken_counts.clone(), 0)
+        })
+        .sum()
 }
 
 #[aoc(day12, part2)]
-fn part2(_records: &[ConditionRecord]) -> u32 {
+fn part2(_records: &[ConditionRecord]) -> u64 {
+    // const REPETITIONS: usize = 5;
+
+    // let records: Vec<ConditionRecord> = records
+    //     .iter()
+    //     .map(|(conditions, broken_counts)| {
+    //         (
+    //             conditions
+    //                 .chars()
+    //                 .chain("?".chars())
+    //                 .cycle()
+    //                 .take((conditions.len() + 1) * REPETITIONS - 1)
+    //                 .collect(),
+    //             broken_counts
+    //                 .iter()
+    //                 .cycle()
+    //                 .take(broken_counts.len() * REPETITIONS)
+    //                 .cloned()
+    //                 .collect(),
+    //         )
+    //     })
+    //     .collect();
+
+    // // dbg!(records);
+
+    // records
+    //     .iter()
+    //     .map(|(conditions, broken_counts)| {
+    //         count_possible_condition_records(conditions.clone(), broken_counts.clone(), 0)
+    //     })
+    //     .sum()
+
     0
 }
