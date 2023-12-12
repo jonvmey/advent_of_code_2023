@@ -9,6 +9,7 @@ dependencies = [
  "aoc-runner",
  "aoc-runner-derive",
  "grid_2d",
+ "integer-partitions",
  "itertools",
  "nom",
  "num",
@@ -70,6 +71,12 @@ checksum = "6dfb23b456edfd3f388df8047a84a367a1168f4606bc21fe1e5dc9606a23689b"
 dependencies = [
  "coord_2d",
 ]
+
+[[package]]
+name = "integer-partitions"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0426629a21b65da94fdbb6d104900da8af7b3572c82f023813fb2f4f08de1a18"
 
 [[package]]
 name = "itertools"
