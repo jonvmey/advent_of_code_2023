@@ -138,7 +138,6 @@ fn part2((grid, start): &(Grid<(Tile, bool)>, Coord)) -> u32 {
         } else if inside_loop {
             inside_count += 1;
         }
-
     }
 
     inside_count
