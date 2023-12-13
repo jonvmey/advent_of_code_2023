@@ -135,3 +135,56 @@ fn part2(records: &[ConditionRecord]) -> u64 {
         })
         .sum()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test1() {
+        let input = "???.### 1,1,3";
+        let (conditions, broken_counts) = &parse_input(input)[0];
+        let count = count_possible_condition_records(conditions.clone(), broken_counts.clone(), 0);
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn test2() {
+        let input = ".??..??...?##. 1,1,3";
+        let (conditions, broken_counts) = &parse_input(input)[0];
+        let count = count_possible_condition_records(conditions.clone(), broken_counts.clone(), 0);
+        assert_eq!(count, 4);
+    }
+
+    #[test]
+    fn test3() {
+        let input = "?#?#?#?#?#?#?#? 1,3,1,6";
+        let (conditions, broken_counts) = &parse_input(input)[0];
+        let count = count_possible_condition_records(conditions.clone(), broken_counts.clone(), 0);
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn test4() {
+        let input = "????.#...#... 4,1,1";
+        let (conditions, broken_counts) = &parse_input(input)[0];
+        let count = count_possible_condition_records(conditions.clone(), broken_counts.clone(), 0);
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn test5() {
+        let input = "????.######..#####. 1,6,5";
+        let (conditions, broken_counts) = &parse_input(input)[0];
+        let count = count_possible_condition_records(conditions.clone(), broken_counts.clone(), 0);
+        assert_eq!(count, 4);
+    }
+
+    #[test]
+    fn test6() {
+        let input = "?###???????? 3,2,1";
+        let (conditions, broken_counts) = &parse_input(input)[0];
+        let count = count_possible_condition_records(conditions.clone(), broken_counts.clone(), 0);
+        assert_eq!(count, 10);
+    }
+}
