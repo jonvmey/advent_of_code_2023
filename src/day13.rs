@@ -29,6 +29,25 @@ impl From<char> for Terrain {
     }
 }
 
+fn find_mirror_points(input: &[Terrain]) -> Option<HashSet<usize>> {
+    let points: HashSet<usize> = (1..input.len())
+        .into_iter()
+        .filter(|index| {
+            input[..*index]
+                .iter()
+                .rev()
+                .zip(input[*index..].iter())
+                .all(|(a, b)| a == b)
+        })
+        .collect();
+
+    if points.is_empty() {
+        return None;
+    }
+
+    Some(points)
+}
+
 fn calculate_intersections(mut possible_mirror_points: Vec<HashSet<usize>>) -> Option<usize> {
     let (intersection, others) = possible_mirror_points.split_at_mut(1);
     let intersection = &mut intersection[0];
@@ -44,34 +63,16 @@ fn calculate_intersections(mut possible_mirror_points: Vec<HashSet<usize>>) -> O
 }
 
 fn check_vertical_mirror(grid: &Grid<Terrain>) -> Option<usize> {
-    let width = grid.width() as usize;
     let mut possible_mirror_point_list: Vec<HashSet<usize>> = vec![];
 
     for row in grid.rows() {
-        let mut possible_mirror_points = HashSet::new();
-
-        for i in 0..width - 1 {
-            if row[..i + 1]
-                .iter()
-                .rev()
-                .zip(row[i + 1..].iter())
-                .all(|(a, b)| a == b)
-            {
-                possible_mirror_points.insert(i + 1);
-            }
-        }
-        possible_mirror_point_list.push(possible_mirror_points.clone());
-
-        if possible_mirror_points.is_empty() {
-            return None;
-        }
+        possible_mirror_point_list.push(find_mirror_points(row)?);
     }
 
     calculate_intersections(possible_mirror_point_list)
 }
 
 fn check_horizontal_mirror(grid: &Grid<Terrain>) -> Option<usize> {
-    let height = grid.height() as usize;
     let width = grid.width() as usize;
     let mut possible_mirror_point_list: Vec<HashSet<usize>> = vec![];
 
@@ -82,24 +83,8 @@ fn check_horizontal_mirror(grid: &Grid<Terrain>) -> Option<usize> {
             .step_by(width)
             .copied()
             .collect();
-        let mut possible_mirror_points = HashSet::new();
 
-        for i in 0..height - 1 {
-            if column[..i + 1]
-                .iter()
-                .rev()
-                .zip(column[i + 1..].iter())
-                .all(|(a, b)| a == b)
-            {
-                possible_mirror_points.insert(i + 1);
-            }
-        }
-
-        if possible_mirror_points.is_empty() {
-            return None;
-        }
-
-        possible_mirror_point_list.push(possible_mirror_points);
+        possible_mirror_point_list.push(find_mirror_points(&column)?);
     }
 
     calculate_intersections(possible_mirror_point_list)
