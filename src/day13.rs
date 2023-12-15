@@ -31,7 +31,6 @@ impl From<char> for Terrain {
 
 fn find_mirror_points(input: &[Terrain]) -> Option<HashSet<usize>> {
     let points: HashSet<usize> = (1..input.len())
-        .into_iter()
         .filter(|index| {
             input[..*index]
                 .iter()
