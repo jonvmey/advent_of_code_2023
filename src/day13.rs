@@ -5,7 +5,6 @@ use nom::bytes::complete::tag;
 use nom::character::complete::newline;
 use nom::multi::{many1, separated_list1};
 use nom::IResult;
-use std::collections::HashSet;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum Axis {
@@ -29,75 +28,91 @@ impl From<char> for Terrain {
     }
 }
 
-fn find_mirror_points(input: &[Terrain]) -> Option<HashSet<usize>> {
-    let points: HashSet<usize> = (1..input.len())
-        .filter(|index| {
-            input[..*index]
+fn calculate_row_inaccuracies(row: &[Terrain]) -> Vec<usize> {
+    (1..row.len())
+        .map(|index| {
+            row[..index]
                 .iter()
                 .rev()
-                .zip(input[*index..].iter())
-                .all(|(a, b)| a == b)
+                .zip(row[index..].iter())
+                .filter(|(a, b)| a != b)
+                .count()
+        })
+        .collect()
+}
+
+fn calculate_horizontal_inaccuracies(grid: &Grid<Terrain>) -> Vec<usize> {
+    let width = grid.width() as usize;
+
+    grid.rows()
+        .map(calculate_row_inaccuracies)
+        .fold(vec![0; width - 1], |mut acc, v| {
+            acc.iter_mut()
+                .zip(v.iter())
+                .for_each(|(acc, elem)| *acc += elem);
+            acc
+        })
+}
+
+fn calculate_vertical_inaccuracies(grid: &Grid<Terrain>) -> Vec<usize> {
+    let width = grid.width() as usize;
+    let height = grid.height() as usize;
+
+    (0..width)
+        .map(|column_index| {
+            let column: Vec<Terrain> = grid
+                .iter()
+                .skip(column_index)
+                .step_by(width)
+                .copied()
+                .collect();
+
+            calculate_row_inaccuracies(&column)
+        })
+        .fold(vec![0; height - 1], |mut acc, v| {
+            acc.iter_mut()
+                .zip(v.iter())
+                .for_each(|(acc, elem)| *acc += elem);
+            acc
+        })
+}
+
+fn calculate_inaccuracies(grid: &Grid<Terrain>) -> Vec<(usize, Axis, usize)> {
+    let mut inaccuracies = vec![];
+
+    for (index, count) in calculate_horizontal_inaccuracies(grid)
+        .into_iter()
+        .enumerate()
+    {
+        inaccuracies.push((index + 1, Axis::Vertical, count));
+    }
+    for (index, count) in calculate_vertical_inaccuracies(grid)
+        .into_iter()
+        .enumerate()
+    {
+        inaccuracies.push((index + 1, Axis::Horizontal, count));
+    }
+
+    inaccuracies
+}
+
+fn find_valid_mirror(grid: &Grid<Terrain>) -> (usize, Axis) {
+    let mirror: Vec<(usize, Axis)> = calculate_inaccuracies(grid)
+        .into_iter()
+        .filter_map(|(index, axis, count)| {
+            if count == 0 {
+                Some((index, axis))
+            } else {
+                None
+            }
         })
         .collect();
 
-    if points.is_empty() {
-        return None;
+    if mirror.len() != 1 {
+        panic!();
     }
 
-    Some(points)
-}
-
-fn calculate_intersections(mut possible_mirror_points: Vec<HashSet<usize>>) -> Option<usize> {
-    let (intersection, others) = possible_mirror_points.split_at_mut(1);
-    let intersection = &mut intersection[0];
-    for other in others {
-        intersection.retain(|e| other.contains(e));
-    }
-
-    if intersection.len() == 1 {
-        return Some(*intersection.iter().next().unwrap());
-    }
-
-    None
-}
-
-fn check_vertical_mirror(grid: &Grid<Terrain>) -> Option<usize> {
-    let mut possible_mirror_point_list: Vec<HashSet<usize>> = vec![];
-
-    for row in grid.rows() {
-        possible_mirror_point_list.push(find_mirror_points(row)?);
-    }
-
-    calculate_intersections(possible_mirror_point_list)
-}
-
-fn check_horizontal_mirror(grid: &Grid<Terrain>) -> Option<usize> {
-    let width = grid.width() as usize;
-    let mut possible_mirror_point_list: Vec<HashSet<usize>> = vec![];
-
-    for column_index in 0..width {
-        let column: Vec<Terrain> = grid
-            .iter()
-            .skip(column_index)
-            .step_by(width)
-            .copied()
-            .collect();
-
-        possible_mirror_point_list.push(find_mirror_points(&column)?);
-    }
-
-    calculate_intersections(possible_mirror_point_list)
-}
-
-fn find_mirror_location(grid: &Grid<Terrain>) -> (usize, Axis) {
-    if let Some(mirror_line) = check_vertical_mirror(grid) {
-        return (mirror_line, Axis::Vertical);
-    }
-    if let Some(mirror_line) = check_horizontal_mirror(grid) {
-        return (mirror_line, Axis::Horizontal);
-    }
-
-    panic!("could not find a mirroring");
+    mirror[0]
 }
 
 fn parse_grid_line(input: &str) -> IResult<&str, Vec<Terrain>> {
@@ -135,7 +150,7 @@ fn parse_input(input: &str) -> Vec<Grid<Terrain>> {
 fn part1(grids: &[Grid<Terrain>]) -> usize {
     grids
         .iter()
-        .map(|grid| match find_mirror_location(grid) {
+        .map(|grid| match find_valid_mirror(grid) {
             (line, Axis::Vertical) => line,
             (line, Axis::Horizontal) => 100 * line,
         })
@@ -163,7 +178,7 @@ mod tests {
             "#.#.##.#.\n",
         );
         let grid = parse_input(input);
-        let (mirror_line, axis) = find_mirror_location(&grid[0]);
+        let (mirror_line, axis) = find_valid_mirror(&grid[0]);
         assert_eq!(mirror_line, 5);
         assert_eq!(axis, Axis::Vertical);
     }
@@ -180,7 +195,7 @@ mod tests {
             "#....#..#\n",
         );
         let grid = parse_input(input);
-        let (mirror_line, axis) = find_mirror_location(&grid[0]);
+        let (mirror_line, axis) = find_valid_mirror(&grid[0]);
         assert_eq!(mirror_line, 4);
         assert_eq!(axis, Axis::Horizontal);
     }
