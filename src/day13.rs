@@ -96,11 +96,11 @@ fn calculate_inaccuracies(grid: &Grid<Terrain>) -> Vec<(usize, Axis, usize)> {
     inaccuracies
 }
 
-fn find_valid_mirror(grid: &Grid<Terrain>) -> (usize, Axis) {
+fn find_mirror(grid: &Grid<Terrain>, inaccuracy_count: usize) -> (usize, Axis) {
     let mirror: Vec<(usize, Axis)> = calculate_inaccuracies(grid)
         .into_iter()
         .filter_map(|(index, axis, count)| {
-            if count == 0 {
+            if count == inaccuracy_count {
                 Some((index, axis))
             } else {
                 None
@@ -113,6 +113,14 @@ fn find_valid_mirror(grid: &Grid<Terrain>) -> (usize, Axis) {
     }
 
     mirror[0]
+}
+
+fn find_valid_mirror(grid: &Grid<Terrain>) -> (usize, Axis) {
+    find_mirror(grid, 0)
+}
+
+fn find_smudged_mirror(grid: &Grid<Terrain>) -> (usize, Axis) {
+    find_mirror(grid, 1)
 }
 
 fn parse_grid_line(input: &str) -> IResult<&str, Vec<Terrain>> {
@@ -158,8 +166,14 @@ fn part1(grids: &[Grid<Terrain>]) -> usize {
 }
 
 #[aoc(day13, part2)]
-fn part2(_grids: &[Grid<Terrain>]) -> usize {
-    0
+fn part2(grids: &[Grid<Terrain>]) -> usize {
+    grids
+        .iter()
+        .map(|grid| match find_smudged_mirror(grid) {
+            (line, Axis::Vertical) => line,
+            (line, Axis::Horizontal) => 100 * line,
+        })
+        .sum()
 }
 
 #[cfg(test)]
