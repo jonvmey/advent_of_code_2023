@@ -112,7 +112,7 @@ fn part2(steps: &[String]) -> usize {
 mod tests {
     use super::*;
 
-    static INPUT : &str = "rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7";
+    static INPUT: &str = "rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7";
 
     #[test]
     fn test1() {
