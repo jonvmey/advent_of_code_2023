@@ -239,7 +239,7 @@ mod tests {
         let start = Coord::new(0, 0);
         let destination = Coord::new(grid.width() as i32 - 1, grid.height() as i32 - 1);
 
-        let heat_loss = a_star(grid, start, destination, 1, 3);
+        let heat_loss = a_star(&grid, start, destination, 1, 3);
 
         assert_eq!(heat_loss, 102);
     }
