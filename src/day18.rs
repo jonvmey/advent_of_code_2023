@@ -6,7 +6,9 @@ use nom::sequence::{delimited, preceded, separated_pair};
 use nom::IResult;
 use num::abs;
 
-#[derive(Debug)]
+type Step = (Direction, u64);
+
+#[derive(Copy, Clone, Debug)]
 enum Direction {
     Up,
     Down,
@@ -21,6 +23,10 @@ impl From<char> for Direction {
             'D' => Direction::Down,
             'L' => Direction::Left,
             'R' => Direction::Right,
+            '3' => Direction::Up,
+            '1' => Direction::Down,
+            '2' => Direction::Left,
+            '0' => Direction::Right,
             _ => panic!(),
         }
     }
@@ -44,7 +50,7 @@ fn shoelace_formula(vertices: &[(i64, i64)]) -> u64 {
     abs(first_part - second_part) as u64 / 2
 }
 
-fn loop_area(dig_plans: &[(Direction, u64)]) -> u64 {
+fn loop_area(dig_plans: &[Step]) -> u64 {
     let mut x: i64 = 0;
     let mut y: i64 = 0;
     let mut vertices = vec![(x, y)];
@@ -69,30 +75,42 @@ fn loop_area(dig_plans: &[(Direction, u64)]) -> u64 {
     shoelace_formula(&vertices) + (loop_length / 2) as u64 + 1
 }
 
-fn parse_line(input: &str) -> IResult<&str, (Direction, u64)> {
+fn parse_line(input: &str) -> IResult<&str, (Step, Step)> {
     // R 4 (#9505a2)
     let (input, (direction, distance)) =
         separated_pair(anychar, space1, nom::character::complete::u64)(input)?;
-    let (input, _colour) = preceded(space1, delimited(tag("(#"), hex_digit1, tag(")")))(input)?;
+    let (input, hex_value) = preceded(space1, delimited(tag("(#"), hex_digit1, tag(")")))(input)?;
 
-    Ok((input, (Direction::from(direction), distance)))
+    let hex_distance = u64::from_str_radix(&hex_value[0..5], 16).unwrap();
+    let hex_direction = Direction::from(hex_value.chars().nth(5).unwrap());
+
+    Ok((
+        input,
+        (
+            (Direction::from(direction), distance),
+            (hex_direction, hex_distance),
+        ),
+    ))
 }
 
 #[aoc_generator(day18)]
-fn parse_input(input: &str) -> Vec<(Direction, u64)> {
+fn parse_input(input: &str) -> (Vec<Step>, Vec<Step>) {
     let (_, lines) = separated_list1(newline, parse_line)(input).unwrap();
 
-    lines
+    (
+        lines.iter().map(|(first, _)| first).copied().collect(),
+        lines.iter().map(|(_, second)| second).copied().collect(),
+    )
 }
 
 #[aoc(day18, part1)]
-fn part1(dig_plans: &[(Direction, u64)]) -> u64 {
+fn part1((dig_plans, _): &(Vec<Step>, Vec<Step>)) -> u64 {
     loop_area(dig_plans)
 }
 
 #[aoc(day18, part2)]
-fn part2(_input: &[(Direction, u64)]) -> u64 {
-    0
+fn part2((_, dig_plans): &(Vec<Step>, Vec<Step>)) -> u64 {
+    loop_area(dig_plans)
 }
 
 #[cfg(test)]
@@ -118,8 +136,15 @@ mod tests {
 
     #[test]
     fn test1() {
-        let dig_plans = parse_input(INPUT);
+        let (dig_plans, _) = parse_input(INPUT);
 
         assert_eq!(loop_area(&dig_plans), 62);
+    }
+
+    #[test]
+    fn test2() {
+        let (_, dig_plans) = parse_input(INPUT);
+
+        assert_eq!(loop_area(&dig_plans), 952408144115);
     }
 }
