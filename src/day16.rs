@@ -277,7 +277,9 @@ fn parse_input(input: &str) -> Grid<Tile> {
     )
 }
 
-fn clone(grid: &Grid<Tile>) -> Grid<Tile> {
+fn clone<T>(grid: &Grid<T>) -> Grid<T> 
+    where T: Copy
+{
     Grid::new_iterator(grid.size(), grid.iter().copied())
 }
 
