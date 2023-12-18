@@ -277,8 +277,9 @@ fn parse_input(input: &str) -> Grid<Tile> {
     )
 }
 
-fn clone<T>(grid: &Grid<T>) -> Grid<T> 
-    where T: Copy
+fn clone<T>(grid: &Grid<T>) -> Grid<T>
+where
+    T: Copy,
 {
     Grid::new_iterator(grid.size(), grid.iter().copied())
 }
@@ -293,12 +294,24 @@ fn part2(grid: &Grid<Tile>) -> usize {
     let width = grid.width() as i32;
     let height = grid.height() as i32;
 
-    let max_from_north = (0..width).map(|index| test_beam_origin(grid, Coord::new(index, 0), Direction::North)).max();
-    let max_from_south = (0..width).map(|index| test_beam_origin(grid, Coord::new(index, height - 1), Direction::South)).max();
-    let max_from_west = (0..width).map(|index| test_beam_origin(grid, Coord::new(0, index), Direction::West)).max();
-    let max_from_east = (0..width).map(|index| test_beam_origin(grid, Coord::new(width - 1, index), Direction::East)).max();
+    let max_from_north = (0..width)
+        .map(|index| test_beam_origin(grid, Coord::new(index, 0), Direction::North))
+        .max();
+    let max_from_south = (0..width)
+        .map(|index| test_beam_origin(grid, Coord::new(index, height - 1), Direction::South))
+        .max();
+    let max_from_west = (0..width)
+        .map(|index| test_beam_origin(grid, Coord::new(0, index), Direction::West))
+        .max();
+    let max_from_east = (0..width)
+        .map(|index| test_beam_origin(grid, Coord::new(width - 1, index), Direction::East))
+        .max();
 
-    [max_from_north, max_from_south, max_from_west, max_from_east].iter().max().unwrap().unwrap()
+    [max_from_north, max_from_south, max_from_west, max_from_east]
+        .iter()
+        .max()
+        .unwrap()
+        .unwrap()
 }
 
 #[cfg(test)]
