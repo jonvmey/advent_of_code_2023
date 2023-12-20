@@ -1,11 +1,12 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use nom::IResult;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_till};
 use nom::character::complete::{alpha1, anychar, newline};
 use nom::multi::separated_list1;
 use nom::sequence::{delimited, preceded};
-use nom::IResult;
 use std::collections::HashMap;
+use std::ops::Range;
 
 type Workflow = (String, Vec<Rule>);
 
@@ -38,7 +39,7 @@ impl From<char> for Attribute {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 enum Operator {
     Less,
     Greater,
@@ -56,7 +57,7 @@ impl From<char> for Operator {
 
 #[derive(Debug)]
 struct Rule {
-    operation: Option<(Attribute, Operator, u32)>,
+    operation: Option<(Attribute, Operator, u64)>,
     destination: String,
 }
 
@@ -72,7 +73,7 @@ impl Rule {
         destination: String,
         attribute: Attribute,
         operator: Operator,
-        value: u32,
+        value: u64,
     ) -> Self {
         Rule {
             operation: Some((attribute, operator, value)),
@@ -83,14 +84,14 @@ impl Rule {
 
 #[derive(Debug)]
 struct Part {
-    x: u32,
-    m: u32,
-    a: u32,
-    s: u32,
+    x: u64,
+    m: u64,
+    a: u64,
+    s: u64,
 }
 
 impl Part {
-    fn new(x: u32, m: u32, a: u32, s: u32) -> Self {
+    fn new(x: u64, m: u64, a: u64, s: u64) -> Self {
         Part { x, m, a, s }
     }
 
@@ -112,7 +113,7 @@ impl Part {
         }
     }
 
-    fn rating(&self) -> u32 {
+    fn rating(&self) -> u64 {
         self.x + self.m + self.a + self.s
     }
 }
@@ -141,7 +142,7 @@ fn apply_workflows(part: &Part, workflows: &HashMap<String, Vec<Rule>>, start: &
 fn parse_rule_with_operation(input: &str) -> IResult<&str, Rule> {
     let (input, attribute) = anychar(input)?;
     let (input, operator) = anychar(input)?;
-    let (input, value) = nom::character::complete::u32(input)?;
+    let (input, value) = nom::character::complete::u64(input)?;
     let (input, _) = tag(":")(input)?;
     let (input, destination) = alpha1(input)?;
 
@@ -176,13 +177,13 @@ fn parse_workflow(input: &str) -> IResult<&str, Workflow> {
 
 fn parse_part(input: &str) -> IResult<&str, Part> {
     let (input, _) = tag("{x=")(input)?;
-    let (input, x) = nom::character::complete::u32(input)?;
+    let (input, x) = nom::character::complete::u64(input)?;
     let (input, _) = tag(",m=")(input)?;
-    let (input, m) = nom::character::complete::u32(input)?;
+    let (input, m) = nom::character::complete::u64(input)?;
     let (input, _) = tag(",a=")(input)?;
-    let (input, a) = nom::character::complete::u32(input)?;
+    let (input, a) = nom::character::complete::u64(input)?;
     let (input, _) = tag(",s=")(input)?;
-    let (input, s) = nom::character::complete::u32(input)?;
+    let (input, s) = nom::character::complete::u64(input)?;
     let (input, _) = tag("}")(input)?;
 
     Ok((input, Part::new(x, m, a, s)))
@@ -198,7 +199,7 @@ fn parse_input(input: &str) -> (HashMap<String, Vec<Rule>>, Vec<Part>) {
 }
 
 #[aoc(day19, part1)]
-fn part1((workflows, parts): &(HashMap<String, Vec<Rule>>, Vec<Part>)) -> u32 {
+fn part1((workflows, parts): &(HashMap<String, Vec<Rule>>, Vec<Part>)) -> u64 {
     parts
         .iter()
         .filter(|part| apply_workflows(part, workflows, "in") == Evaluation::Accept)
@@ -206,9 +207,121 @@ fn part1((workflows, parts): &(HashMap<String, Vec<Rule>>, Vec<Part>)) -> u32 {
         .sum()
 }
 
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+struct PossibleParts {
+    x: Range<u64>,
+    m: Range<u64>,
+    a: Range<u64>,
+    s: Range<u64>,
+}
+
+impl PossibleParts {
+    fn new(min: u64, max: u64) -> Self {
+        PossibleParts {
+            x: min..max + 1,
+            m: min..max + 1,
+            a: min..max + 1,
+            s: min..max + 1,
+        }
+    }
+
+    fn possibilities(&self) -> u64 {
+        (self.x.end - self.x.start)
+            * (self.m.end - self.m.start)
+            * (self.a.end - self.a.start)
+            * (self.s.end - self.s.start)
+    }
+
+    fn split_by_rule(self, rule: &Rule) -> (Option<Self>, Option<Self>) {
+        if let Some((attribute, operator, value)) = &rule.operation {
+            let mut matched = self.clone();
+            let mut unmatched = self.clone();
+            let (split_attribute, matched_attribute, unmatched_attribute) = match attribute {
+                Attribute::X => (self.x, &mut matched.x, &mut unmatched.x),
+                Attribute::M => (self.m, &mut matched.m, &mut unmatched.m),
+                Attribute::A => (self.a, &mut matched.a, &mut unmatched.a),
+                Attribute::S => (self.s, &mut matched.s, &mut unmatched.s),
+            };
+
+            if split_attribute.contains(value) {
+                match operator {
+                    Operator::Less => {
+                        *matched_attribute = split_attribute.start..*value;
+                        *unmatched_attribute = *value..split_attribute.end;
+                    }
+                    Operator::Greater => {
+                        *unmatched_attribute = split_attribute.start..*value + 1;
+                        *matched_attribute = *value + 1..split_attribute.end;
+                    }
+                }
+
+                (Some(matched), Some(unmatched))
+            } else if (*operator == Operator::Less && *value > split_attribute.end)
+                || (*operator == Operator::Greater && *value < split_attribute.start)
+            {
+                (Some(matched), None)
+            } else {
+                (None, Some(unmatched))
+            }
+        } else {
+            (Some(self), None)
+        }
+    }
+}
+
+fn evaluate_parts(
+    workflows: &HashMap<String, Vec<Rule>>,
+    workflow: String,
+    parts: PossibleParts,
+) -> HashMap<PossibleParts, String> {
+    let mut map: HashMap<PossibleParts, String> = HashMap::new();
+    map.insert(parts, workflow);
+
+    loop {
+        let (mut parts, workflow) = {
+            if let Some((parts, workflow)) = map
+                .iter()
+                .find(|(_, workflow)| *workflow != ACCEPT && **workflow != REJECT)
+            {
+                (parts.clone(), workflow.clone())
+            } else {
+                break;
+            }
+        };
+
+        for rule in workflows.get(&workflow).unwrap() {
+            match parts.clone().split_by_rule(rule) {
+                (Some(matched), Some(unmatched)) => {
+                    map.remove(&parts);
+                    map.insert(matched, rule.destination.clone());
+                    parts = unmatched;
+                }
+                (Some(matched), None) => {
+                    map.insert(matched, rule.destination.clone());
+                }
+                (None, Some(unmatched)) => {
+                    parts = unmatched;
+                }
+                _ => panic!(),
+            }
+        }
+    }
+
+    map
+}
+
+fn calculate_accepted_possibilities(map: &HashMap<PossibleParts, String>) -> u64 {
+    map.iter()
+        .filter(|(_, eval)| *eval == ACCEPT)
+        .map(|(parts, _)| parts.possibilities())
+        .sum()
+}
+
 #[aoc(day19, part2)]
-fn part2(_input: &(HashMap<String, Vec<Rule>>, Vec<Part>)) -> u32 {
-    0
+fn part2((workflows, _): &(HashMap<String, Vec<Rule>>, Vec<Part>)) -> u64 {
+    let parts = PossibleParts::new(1, 4000);
+    let stuff = evaluate_parts(workflows, "in".to_string(), parts);
+    calculate_accepted_possibilities(&stuff)
 }
 
 #[cfg(test)]
@@ -239,12 +352,23 @@ mod tests {
     fn test1() {
         let (workflows, parts) = parse_input(INPUT);
 
-        let sum: u32 = parts
+        let sum: u64 = parts
             .iter()
             .filter(|part| apply_workflows(part, &workflows, &"in") == Evaluation::Accept)
             .map(|part| part.rating())
             .sum();
 
         assert_eq!(sum, 19114);
+    }
+
+    #[test]
+    fn test2() {
+        let (workflows, _) = parse_input(INPUT);
+
+        let parts = PossibleParts::new(1, 4000);
+        let stuff = evaluate_parts(&workflows, "in".to_string(), parts);
+        let sum = calculate_accepted_possibilities(&stuff);
+
+        assert_eq!(sum, 167409079868000);
     }
 }
