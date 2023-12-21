@@ -1,10 +1,10 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use nom::IResult;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_till};
 use nom::character::complete::{alpha1, anychar, newline};
 use nom::multi::separated_list1;
 use nom::sequence::{delimited, preceded};
+use nom::IResult;
 use std::collections::HashMap;
 use std::ops::Range;
 
